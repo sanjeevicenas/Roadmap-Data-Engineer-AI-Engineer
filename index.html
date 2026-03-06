@@ -1,0 +1,1210 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>REST API Crash Course</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Space+Mono:wght@400;700&family=Syne:wght@400;600;800&display=swap');
+
+  :root {
+    --bg: #0b0e1a;
+    --surface: #111627;
+    --border: #1e2740;
+    --accent: #00e5ff;
+    --accent2: #ff6b6b;
+    --accent3: #a78bfa;
+    --text: #e2e8f0;
+    --muted: #64748b;
+    --get: #22c55e;
+    --post: #f59e0b;
+    --put: #3b82f6;
+    --delete: #ef4444;
+    --patch: #a78bfa;
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: 'Syne', sans-serif;
+    line-height: 1.7;
+    min-height: 100vh;
+  }
+
+  /* HERO */
+  .hero {
+    padding: 60px 40px 40px;
+    max-width: 900px;
+    margin: 0 auto;
+    position: relative;
+  }
+
+  .hero::before {
+    content: '';
+    position: absolute;
+    top: -80px; left: -100px;
+    width: 500px; height: 500px;
+    background: radial-gradient(circle, rgba(0,229,255,0.07) 0%, transparent 70%);
+    pointer-events: none;
+  }
+
+  .badge {
+    display: inline-block;
+    background: rgba(0,229,255,0.1);
+    border: 1px solid rgba(0,229,255,0.3);
+    color: var(--accent);
+    font-family: 'Space Mono', monospace;
+    font-size: 11px;
+    padding: 4px 12px;
+    border-radius: 20px;
+    letter-spacing: 2px;
+    margin-bottom: 20px;
+    text-transform: uppercase;
+  }
+
+  .hero h1 {
+    font-size: clamp(36px, 6vw, 64px);
+    font-weight: 800;
+    line-height: 1.1;
+    margin-bottom: 16px;
+    background: linear-gradient(135deg, #fff 0%, var(--accent) 100%);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+  }
+
+  .hero p {
+    color: var(--muted);
+    font-size: 18px;
+    max-width: 600px;
+  }
+
+  /* PROGRESS */
+  .progress-bar-wrap {
+    max-width: 900px;
+    margin: 0 auto 10px;
+    padding: 0 40px;
+  }
+
+  .progress-label {
+    font-family: 'Space Mono', monospace;
+    font-size: 11px;
+    color: var(--muted);
+    margin-bottom: 6px;
+    display: flex;
+    justify-content: space-between;
+  }
+
+  .progress-track {
+    height: 3px;
+    background: var(--border);
+    border-radius: 10px;
+    overflow: hidden;
+  }
+
+  .progress-fill {
+    height: 100%;
+    background: linear-gradient(90deg, var(--accent), var(--accent3));
+    border-radius: 10px;
+    transition: width 0.4s ease;
+    width: 0%;
+  }
+
+  /* TABS */
+  .tabs {
+    max-width: 900px;
+    margin: 30px auto 0;
+    padding: 0 40px;
+    display: flex;
+    gap: 8px;
+    flex-wrap: wrap;
+  }
+
+  .tab {
+    font-family: 'Space Mono', monospace;
+    font-size: 12px;
+    padding: 8px 16px;
+    border-radius: 8px;
+    border: 1px solid var(--border);
+    background: var(--surface);
+    color: var(--muted);
+    cursor: pointer;
+    transition: all 0.2s;
+    white-space: nowrap;
+  }
+
+  .tab:hover { border-color: var(--accent); color: var(--accent); }
+  .tab.active { background: var(--accent); color: #000; border-color: var(--accent); font-weight: 700; }
+  .tab.done { border-color: #22c55e44; color: #22c55e; }
+  .tab.done::after { content: ' ✓'; }
+
+  /* CONTENT */
+  .content {
+    max-width: 900px;
+    margin: 30px auto 60px;
+    padding: 0 40px;
+  }
+
+  .section { display: none; animation: fadeIn 0.3s ease; }
+  .section.active { display: block; }
+
+  @keyframes fadeIn {
+    from { opacity: 0; transform: translateY(10px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+
+  .section-title {
+    font-size: 28px;
+    font-weight: 800;
+    margin-bottom: 8px;
+  }
+
+  .section-subtitle {
+    color: var(--muted);
+    margin-bottom: 30px;
+    font-size: 15px;
+  }
+
+  /* CARDS */
+  .card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 16px;
+    padding: 24px;
+    margin-bottom: 20px;
+  }
+
+  .card h3 {
+    font-size: 16px;
+    font-weight: 700;
+    margin-bottom: 10px;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+  }
+
+  .card p { color: #94a3b8; font-size: 15px; }
+
+  /* CODE BLOCK */
+  .code-block {
+    background: #070a12;
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 20px;
+    font-family: 'Space Mono', monospace;
+    font-size: 13px;
+    line-height: 1.8;
+    overflow-x: auto;
+    margin: 16px 0;
+    position: relative;
+  }
+
+  .code-block .comment { color: #475569; }
+  .code-block .keyword { color: var(--accent3); }
+  .code-block .string { color: var(--get); }
+  .code-block .number { color: var(--post); }
+  .code-block .key { color: var(--accent); }
+  .code-block .method-get { color: var(--get); font-weight: bold; }
+  .code-block .method-post { color: var(--post); font-weight: bold; }
+  .code-block .method-put { color: var(--put); font-weight: bold; }
+  .code-block .method-delete { color: var(--delete); font-weight: bold; }
+  .code-block .url { color: #e2e8f0; }
+  .code-block .status-ok { color: var(--get); }
+  .code-block .status-err { color: var(--delete); }
+
+  /* METHOD BADGES */
+  .method {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    font-family: 'Space Mono', monospace;
+    font-size: 11px;
+    font-weight: 700;
+    padding: 3px 10px;
+    border-radius: 6px;
+    letter-spacing: 1px;
+    min-width: 64px;
+  }
+
+  .m-get { background: rgba(34,197,94,0.15); color: var(--get); border: 1px solid rgba(34,197,94,0.3); }
+  .m-post { background: rgba(245,158,11,0.15); color: var(--post); border: 1px solid rgba(245,158,11,0.3); }
+  .m-put { background: rgba(59,130,246,0.15); color: var(--put); border: 1px solid rgba(59,130,246,0.3); }
+  .m-delete { background: rgba(239,68,68,0.15); color: var(--delete); border: 1px solid rgba(239,68,68,0.3); }
+  .m-patch { background: rgba(167,139,250,0.15); color: var(--patch); border: 1px solid rgba(167,139,250,0.3); }
+
+  /* ENDPOINT TABLE */
+  .endpoint-row {
+    display: flex;
+    align-items: flex-start;
+    gap: 16px;
+    padding: 16px;
+    border-bottom: 1px solid var(--border);
+    transition: background 0.2s;
+    border-radius: 8px;
+  }
+
+  .endpoint-row:last-child { border-bottom: none; }
+  .endpoint-row:hover { background: rgba(255,255,255,0.03); }
+
+  .endpoint-path {
+    font-family: 'Space Mono', monospace;
+    font-size: 13px;
+    color: var(--text);
+    flex: 1;
+  }
+
+  .endpoint-desc {
+    color: var(--muted);
+    font-size: 14px;
+    flex: 2;
+  }
+
+  /* STATUS CODES */
+  .status-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+    gap: 12px;
+    margin-top: 16px;
+  }
+
+  .status-item {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 16px;
+    transition: transform 0.2s;
+  }
+
+  .status-item:hover { transform: translateY(-2px); }
+
+  .status-code {
+    font-family: 'Space Mono', monospace;
+    font-size: 22px;
+    font-weight: 700;
+    margin-bottom: 4px;
+  }
+
+  .s-2xx .status-code { color: var(--get); }
+  .s-3xx .status-code { color: var(--accent); }
+  .s-4xx .status-code { color: var(--post); }
+  .s-5xx .status-code { color: var(--delete); }
+
+  .status-name { font-size: 13px; font-weight: 600; margin-bottom: 4px; }
+  .status-desc { font-size: 12px; color: var(--muted); }
+
+  /* QUIZ */
+  .quiz-question {
+    font-size: 18px;
+    font-weight: 700;
+    margin-bottom: 20px;
+    line-height: 1.4;
+  }
+
+  .quiz-options {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    margin-bottom: 20px;
+  }
+
+  .quiz-option {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 14px 20px;
+    cursor: pointer;
+    font-size: 15px;
+    transition: all 0.2s;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+  }
+
+  .quiz-option:hover { border-color: var(--accent); }
+  .quiz-option.correct { border-color: var(--get); background: rgba(34,197,94,0.1); }
+  .quiz-option.wrong { border-color: var(--delete); background: rgba(239,68,68,0.1); }
+
+  .quiz-option .opt-letter {
+    font-family: 'Space Mono', monospace;
+    font-size: 12px;
+    width: 28px;
+    height: 28px;
+    border-radius: 50%;
+    background: var(--border);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+  }
+
+  .quiz-feedback {
+    padding: 14px 18px;
+    border-radius: 12px;
+    font-size: 14px;
+    margin-top: 12px;
+    display: none;
+  }
+
+  .quiz-feedback.show { display: block; }
+  .quiz-feedback.correct-fb { background: rgba(34,197,94,0.1); border: 1px solid rgba(34,197,94,0.3); color: #86efac; }
+  .quiz-feedback.wrong-fb { background: rgba(239,68,68,0.1); border: 1px solid rgba(239,68,68,0.3); color: #fca5a5; }
+
+  .quiz-nav { display: flex; gap: 12px; margin-top: 20px; align-items: center; }
+
+  /* BUTTONS */
+  .btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    padding: 12px 24px;
+    border-radius: 10px;
+    font-family: 'Syne', sans-serif;
+    font-size: 14px;
+    font-weight: 700;
+    cursor: pointer;
+    transition: all 0.2s;
+    border: none;
+  }
+
+  .btn-primary {
+    background: var(--accent);
+    color: #000;
+  }
+
+  .btn-primary:hover { background: #00c8e0; transform: translateY(-1px); }
+
+  .btn-ghost {
+    background: var(--surface);
+    color: var(--text);
+    border: 1px solid var(--border);
+  }
+
+  .btn-ghost:hover { border-color: var(--accent); color: var(--accent); }
+
+  /* ANALOGY BOXES */
+  .analogy {
+    background: linear-gradient(135deg, rgba(167,139,250,0.08), rgba(0,229,255,0.05));
+    border: 1px solid rgba(167,139,250,0.2);
+    border-radius: 16px;
+    padding: 24px;
+    margin: 20px 0;
+  }
+
+  .analogy-label {
+    font-family: 'Space Mono', monospace;
+    font-size: 10px;
+    color: var(--accent3);
+    letter-spacing: 2px;
+    text-transform: uppercase;
+    margin-bottom: 8px;
+  }
+
+  .analogy p { color: #c4b5fd; font-size: 15px; }
+
+  /* FLOW DIAGRAM */
+  .flow {
+    display: flex;
+    align-items: center;
+    gap: 0;
+    margin: 24px 0;
+    flex-wrap: wrap;
+    justify-content: center;
+  }
+
+  .flow-box {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 14px 20px;
+    text-align: center;
+    font-size: 13px;
+    font-weight: 600;
+    min-width: 120px;
+  }
+
+  .flow-box .flow-icon { font-size: 22px; margin-bottom: 4px; }
+  .flow-box .flow-label { color: var(--muted); font-size: 11px; font-family: 'Space Mono', monospace; }
+
+  .flow-arrow {
+    font-size: 20px;
+    color: var(--accent);
+    padding: 0 8px;
+    font-family: 'Space Mono', monospace;
+  }
+
+  .highlight-box {
+    background: rgba(0,229,255,0.05);
+    border-left: 3px solid var(--accent);
+    border-radius: 0 12px 12px 0;
+    padding: 16px 20px;
+    margin: 16px 0;
+    font-size: 14px;
+    color: #94a3b8;
+  }
+
+  /* SCORE */
+  .score-display {
+    text-align: center;
+    padding: 40px;
+  }
+
+  .score-number {
+    font-size: 80px;
+    font-weight: 800;
+    background: linear-gradient(135deg, var(--accent), var(--accent3));
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+    line-height: 1;
+  }
+
+  .cheatsheet-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 16px;
+  }
+
+  @media (max-width: 600px) {
+    .hero { padding: 40px 20px 30px; }
+    .tabs, .content, .progress-bar-wrap { padding-left: 20px; padding-right: 20px; }
+    .cheatsheet-grid { grid-template-columns: 1fr; }
+    .flow { gap: 4px; }
+    .flow-box { min-width: 90px; padding: 10px 12px; }
+  }
+</style>
+</head>
+<body>
+
+<div class="hero">
+  <div class="badge">⚡ Crash Course</div>
+  <h1>REST API<br/>Fundamentals</h1>
+  <p>Go from zero to confident in REST APIs — built for data engineers.</p>
+</div>
+
+<div class="progress-bar-wrap">
+  <div class="progress-label">
+    <span>Your progress</span>
+    <span id="progress-text">0 / 6 sections</span>
+  </div>
+  <div class="progress-track">
+    <div class="progress-fill" id="progress-fill"></div>
+  </div>
+</div>
+
+<div class="tabs" id="tabs">
+  <button class="tab active" onclick="showSection(0)" data-index="0">1. What is REST?</button>
+  <button class="tab" onclick="showSection(1)" data-index="1">2. HTTP Methods</button>
+  <button class="tab" onclick="showSection(2)" data-index="2">3. Request & Response</button>
+  <button class="tab" onclick="showSection(3)" data-index="3">4. Status Codes</button>
+  <button class="tab" onclick="showSection(4)" data-index="4">5. REST in Data Eng</button>
+  <button class="tab" onclick="showSection(5)" data-index="5">6. Quiz</button>
+</div>
+
+<div class="content">
+
+  <!-- SECTION 1: What is REST -->
+  <div class="section active" id="section-0">
+    <div class="section-title">What is a REST API?</div>
+    <div class="section-subtitle">The foundation — understand this and everything else clicks.</div>
+
+    <div class="analogy">
+      <div class="analogy-label">🍽️ Real-world analogy</div>
+      <p>Think of a REST API like a <strong>restaurant menu</strong>. You (the client) don't go into the kitchen — you just look at the menu (API docs), place an order (send a request), and the waiter brings back your food (the response). You never need to know how the kitchen works.</p>
+    </div>
+
+    <div class="card">
+      <h3>🌐 REST = Rules for talking over the web</h3>
+      <p><strong>REST</strong> stands for <em>Representational State Transfer</em>. It's not a tool or software — it's a set of rules (an "architectural style") for how computers should communicate over the internet using HTTP.</p>
+    </div>
+
+    <div class="card">
+      <h3>📦 API = The door to someone's data or service</h3>
+      <p>An <strong>API</strong> (Application Programming Interface) is how one application exposes its functionality to others. A REST API does this over HTTP — the same protocol your browser uses.</p>
+    </div>
+
+    <div class="flow">
+      <div class="flow-box">
+        <div class="flow-icon">💻</div>
+        <div>Your Code</div>
+        <div class="flow-label">CLIENT</div>
+      </div>
+      <div class="flow-arrow">──── REQUEST ────▶</div>
+      <div class="flow-box">
+        <div class="flow-icon">🖥️</div>
+        <div>Their Server</div>
+        <div class="flow-label">SERVER</div>
+      </div>
+      <div class="flow-arrow">◀── RESPONSE ────</div>
+      <div class="flow-box">
+        <div class="flow-icon">📦</div>
+        <div>JSON Data</div>
+        <div class="flow-label">RESULT</div>
+      </div>
+    </div>
+
+    <div class="card">
+      <h3>📋 6 Principles of REST</h3>
+      <div style="display:grid; gap:10px; margin-top:10px;">
+        <div class="highlight-box"><strong>1. Client-Server</strong> — The client and server are separate. Your code doesn't care how the server stores data.</div>
+        <div class="highlight-box"><strong>2. Stateless</strong> — Every request is self-contained. The server doesn't remember your previous request. You send everything needed each time.</div>
+        <div class="highlight-box"><strong>3. Uniform Interface</strong> — Every API follows the same conventions (URLs, methods, JSON). Learn one, learn them all.</div>
+        <div class="highlight-box"><strong>4. Cacheable</strong> — Responses can be cached to speed things up.</div>
+        <div class="highlight-box"><strong>5. Layered System</strong> — There can be proxies, gateways, or load balancers between you and the server — you don't need to know.</div>
+        <div class="highlight-box"><strong>6. Resource-Based</strong> — Everything is a <em>resource</em> with a URL. A user, an order, a product — all resources.</div>
+      </div>
+    </div>
+
+    <div class="card">
+      <h3>🔗 URLs = Resources</h3>
+      <p>In REST, every piece of data is a <strong>resource</strong> with its own URL (called an endpoint):</p>
+      <div class="code-block">
+<span class="comment"># A collection of users</span>
+<span class="url">https://api.example.com/users</span>
+
+<span class="comment"># A specific user (id = 42)</span>
+<span class="url">https://api.example.com/users/42</span>
+
+<span class="comment"># That user's orders</span>
+<span class="url">https://api.example.com/users/42/orders</span>
+      </div>
+    </div>
+
+    <button class="btn btn-primary" onclick="nextSection()">Next: HTTP Methods →</button>
+  </div>
+
+  <!-- SECTION 2: HTTP Methods -->
+  <div class="section" id="section-1">
+    <div class="section-title">HTTP Methods (Verbs)</div>
+    <div class="section-subtitle">Methods tell the server what action you want to perform.</div>
+
+    <div class="analogy">
+      <div class="analogy-label">📁 Analogy</div>
+      <p>Think of a database table of <strong>users</strong>. The URL <code>/users</code> is the resource. The <strong>HTTP method</strong> tells the server whether you want to <em>read</em>, <em>create</em>, <em>update</em>, or <em>delete</em> that resource — like CRUD operations.</p>
+    </div>
+
+    <div style="margin: 20px 0; display: flex; flex-direction: column; gap: 14px;">
+
+      <div class="card">
+        <h3><span class="method m-get">GET</span> Read / Fetch data</h3>
+        <p>Retrieve a resource. Does <strong>not</strong> change anything on the server. Like a SELECT in SQL.</p>
+        <div class="code-block">
+<span class="comment"># Get all users</span>
+<span class="method-get">GET</span>  <span class="url">/users</span>
+
+<span class="comment"># Get a specific user</span>
+<span class="method-get">GET</span>  <span class="url">/users/42</span>
+        </div>
+      </div>
+
+      <div class="card">
+        <h3><span class="method m-post">POST</span> Create new data</h3>
+        <p>Send data to the server to create a new resource. Like an INSERT in SQL.</p>
+        <div class="code-block">
+<span class="method-post">POST</span> <span class="url">/users</span>
+<span class="comment"># with body:</span>
+{
+  <span class="key">"name"</span>: <span class="string">"Alice"</span>,
+  <span class="key">"email"</span>: <span class="string">"alice@example.com"</span>
+}
+        </div>
+      </div>
+
+      <div class="card">
+        <h3><span class="method m-put">PUT</span> Replace / Update (full)</h3>
+        <p>Replace an existing resource completely. Like UPDATE ... SET all columns in SQL.</p>
+        <div class="code-block">
+<span class="method-put">PUT</span>  <span class="url">/users/42</span>
+<span class="comment"># with body (send ALL fields):</span>
+{
+  <span class="key">"name"</span>: <span class="string">"Alice Smith"</span>,
+  <span class="key">"email"</span>: <span class="string">"alice@new.com"</span>
+}
+        </div>
+      </div>
+
+      <div class="card">
+        <h3><span class="method m-patch">PATCH</span> Update (partial)</h3>
+        <p>Update only specific fields of a resource. Like UPDATE ... SET one column in SQL.</p>
+        <div class="code-block">
+<span class="method-put">PATCH</span> <span class="url">/users/42</span>
+<span class="comment"># Only update the email:</span>
+{
+  <span class="key">"email"</span>: <span class="string">"alice@updated.com"</span>
+}
+        </div>
+      </div>
+
+      <div class="card">
+        <h3><span class="method m-delete">DELETE</span> Remove data</h3>
+        <p>Delete a resource from the server. Like DELETE FROM in SQL.</p>
+        <div class="code-block">
+<span class="method-delete">DELETE</span> <span class="url">/users/42</span>
+<span class="comment"># No body needed — just the URL</span>
+        </div>
+      </div>
+    </div>
+
+    <div class="card" style="border-color: rgba(0,229,255,0.2);">
+      <h3>📊 SQL vs REST Methods Cheatsheet</h3>
+      <div style="overflow-x:auto; margin-top:12px;">
+        <table style="width:100%; border-collapse:collapse; font-size:14px;">
+          <tr style="border-bottom:1px solid var(--border);">
+            <th style="text-align:left; padding:8px; color:var(--muted);">SQL</th>
+            <th style="text-align:left; padding:8px; color:var(--muted);">REST Method</th>
+            <th style="text-align:left; padding:8px; color:var(--muted);">Action</th>
+          </tr>
+          <tr style="border-bottom:1px solid var(--border);">
+            <td style="padding:8px; font-family:monospace; color:var(--accent3);">SELECT</td>
+            <td style="padding:8px;"><span class="method m-get">GET</span></td>
+            <td style="padding:8px; color:var(--muted);">Read</td>
+          </tr>
+          <tr style="border-bottom:1px solid var(--border);">
+            <td style="padding:8px; font-family:monospace; color:var(--accent3);">INSERT</td>
+            <td style="padding:8px;"><span class="method m-post">POST</span></td>
+            <td style="padding:8px; color:var(--muted);">Create</td>
+          </tr>
+          <tr style="border-bottom:1px solid var(--border);">
+            <td style="padding:8px; font-family:monospace; color:var(--accent3);">UPDATE (all)</td>
+            <td style="padding:8px;"><span class="method m-put">PUT</span></td>
+            <td style="padding:8px; color:var(--muted);">Replace</td>
+          </tr>
+          <tr style="border-bottom:1px solid var(--border);">
+            <td style="padding:8px; font-family:monospace; color:var(--accent3);">UPDATE (partial)</td>
+            <td style="padding:8px;"><span class="method m-patch">PATCH</span></td>
+            <td style="padding:8px; color:var(--muted);">Partial Update</td>
+          </tr>
+          <tr>
+            <td style="padding:8px; font-family:monospace; color:var(--accent3);">DELETE</td>
+            <td style="padding:8px;"><span class="method m-delete">DELETE</span></td>
+            <td style="padding:8px; color:var(--muted);">Remove</td>
+          </tr>
+        </table>
+      </div>
+    </div>
+
+    <div style="display:flex; gap:12px; flex-wrap:wrap;">
+      <button class="btn btn-ghost" onclick="prevSection()">← Back</button>
+      <button class="btn btn-primary" onclick="nextSection()">Next: Request & Response →</button>
+    </div>
+  </div>
+
+  <!-- SECTION 3: Request & Response -->
+  <div class="section" id="section-2">
+    <div class="section-title">Request & Response</div>
+    <div class="section-subtitle">The anatomy of every API call you'll ever make.</div>
+
+    <div class="card">
+      <h3>📤 Anatomy of an HTTP Request</h3>
+      <p>Every request has these parts:</p>
+      <div class="code-block">
+<span class="comment"># 1. METHOD + URL (endpoint)</span>
+<span class="method-post">POST</span>  https://api.example.com/users
+
+<span class="comment"># 2. HEADERS (metadata about the request)</span>
+Content-Type:  application/json
+Authorization: Bearer eyJhbGci...
+X-API-Key:     my-secret-key-123
+Accept:        application/json
+
+<span class="comment"># 3. BODY (data you send — only for POST/PUT/PATCH)</span>
+{
+  <span class="key">"name"</span>: <span class="string">"Alice"</span>,
+  <span class="key">"email"</span>: <span class="string">"alice@example.com"</span>
+}
+
+<span class="comment"># 4. QUERY PARAMS (filters, pagination — for GET)</span>
+<span class="url">/users?page=2&limit=50&status=active</span>
+      </div>
+    </div>
+
+    <div class="card">
+      <h3>📥 Anatomy of an HTTP Response</h3>
+      <p>Every response has a status code + a JSON body:</p>
+      <div class="code-block">
+<span class="comment"># Status line</span>
+<span class="status-ok">HTTP/1.1  201  Created</span>
+
+<span class="comment"># Response headers</span>
+Content-Type: application/json
+X-Request-Id: abc-123
+
+<span class="comment"># Response body (JSON)</span>
+{
+  <span class="key">"id"</span>:    <span class="number">99</span>,
+  <span class="key">"name"</span>:  <span class="string">"Alice"</span>,
+  <span class="key">"email"</span>: <span class="string">"alice@example.com"</span>,
+  <span class="key">"created_at"</span>: <span class="string">"2026-03-06T10:00:00Z"</span>
+}
+      </div>
+    </div>
+
+    <div class="card">
+      <h3>🔑 Common Headers Explained</h3>
+      <div style="display: flex; flex-direction: column; gap: 10px; margin-top:10px;">
+        <div class="highlight-box"><strong>Content-Type: application/json</strong> — "I'm sending JSON data"</div>
+        <div class="highlight-box"><strong>Accept: application/json</strong> — "Please give me JSON back"</div>
+        <div class="highlight-box"><strong>Authorization: Bearer &lt;token&gt;</strong> — "Here's my auth token"</div>
+        <div class="highlight-box"><strong>X-API-Key: &lt;key&gt;</strong> — "Here's my API key"</div>
+      </div>
+    </div>
+
+    <div class="card">
+      <h3>🔎 Query Parameters vs Body</h3>
+      <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-top:10px;">
+        <div>
+          <div style="color:var(--accent); font-weight:700; margin-bottom:8px; font-size:13px;">QUERY PARAMS</div>
+          <p style="font-size:13px;">Appended to the URL. Used for filtering, sorting, pagination. Used with GET.</p>
+          <div class="code-block" style="margin-top:8px;">/orders?status=paid&limit=100&page=3</div>
+        </div>
+        <div>
+          <div style="color:var(--post); font-weight:700; margin-bottom:8px; font-size:13px;">REQUEST BODY</div>
+          <p style="font-size:13px;">JSON sent inside the request. Used for creating or updating data. Used with POST/PUT/PATCH.</p>
+          <div class="code-block" style="margin-top:8px;">{"status": "paid", "amount": 99.99}</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="card">
+      <h3>🐍 Python Example (requests library)</h3>
+      <div class="code-block">
+<span class="keyword">import</span> requests
+
+<span class="comment"># GET with query params</span>
+response = requests.get(
+    <span class="string">"https://api.example.com/orders"</span>,
+    headers={<span class="string">"X-API-Key"</span>: <span class="string">"my-key"</span>},
+    params={<span class="string">"status"</span>: <span class="string">"paid"</span>, <span class="string">"limit"</span>: <span class="number">100</span>}
+)
+data = response.json()   <span class="comment"># Parse JSON response</span>
+
+<span class="comment"># POST with body</span>
+response = requests.post(
+    <span class="string">"https://api.example.com/users"</span>,
+    headers={<span class="string">"X-API-Key"</span>: <span class="string">"my-key"</span>},
+    json={<span class="string">"name"</span>: <span class="string">"Alice"</span>, <span class="string">"email"</span>: <span class="string">"alice@x.com"</span>}
+)
+print(response.status_code)  <span class="comment"># 201</span>
+print(response.json())       <span class="comment"># {"id": 99, "name": "Alice", ...}</span>
+      </div>
+    </div>
+
+    <div style="display:flex; gap:12px; flex-wrap:wrap;">
+      <button class="btn btn-ghost" onclick="prevSection()">← Back</button>
+      <button class="btn btn-primary" onclick="nextSection()">Next: Status Codes →</button>
+    </div>
+  </div>
+
+  <!-- SECTION 4: Status Codes -->
+  <div class="section" id="section-3">
+    <div class="section-title">HTTP Status Codes</div>
+    <div class="section-subtitle">The server's way of telling you what happened.</div>
+
+    <div class="analogy">
+      <div class="analogy-label">📬 Analogy</div>
+      <p>Status codes are like delivery notifications. <strong>200</strong> = "Delivered successfully." <strong>404</strong> = "Address not found." <strong>500</strong> = "Our truck broke down."</p>
+    </div>
+
+    <div style="margin-bottom: 12px; font-weight: 700; font-size: 15px; color: var(--accent);">2xx — Success</div>
+    <div class="status-grid" style="margin-bottom: 24px;">
+      <div class="status-item s-2xx">
+        <div class="status-code">200</div>
+        <div class="status-name">OK</div>
+        <div class="status-desc">Request succeeded. Data returned.</div>
+      </div>
+      <div class="status-item s-2xx">
+        <div class="status-code">201</div>
+        <div class="status-name">Created</div>
+        <div class="status-desc">New resource created (POST success).</div>
+      </div>
+      <div class="status-item s-2xx">
+        <div class="status-code">204</div>
+        <div class="status-name">No Content</div>
+        <div class="status-desc">Success, but no body returned (DELETE).</div>
+      </div>
+    </div>
+
+    <div style="margin-bottom: 12px; font-weight: 700; font-size: 15px; color: var(--post);">4xx — Client Errors (your fault)</div>
+    <div class="status-grid" style="margin-bottom: 24px;">
+      <div class="status-item s-4xx">
+        <div class="status-code">400</div>
+        <div class="status-name">Bad Request</div>
+        <div class="status-desc">Invalid data sent (e.g. missing field).</div>
+      </div>
+      <div class="status-item s-4xx">
+        <div class="status-code">401</div>
+        <div class="status-name">Unauthorized</div>
+        <div class="status-desc">Not authenticated. Check your API key.</div>
+      </div>
+      <div class="status-item s-4xx">
+        <div class="status-code">403</div>
+        <div class="status-name">Forbidden</div>
+        <div class="status-desc">Authenticated but no permission.</div>
+      </div>
+      <div class="status-item s-4xx">
+        <div class="status-code">404</div>
+        <div class="status-name">Not Found</div>
+        <div class="status-desc">Resource or endpoint doesn't exist.</div>
+      </div>
+      <div class="status-item s-4xx">
+        <div class="status-code">422</div>
+        <div class="status-name">Unprocessable</div>
+        <div class="status-desc">Validation failed on your data.</div>
+      </div>
+      <div class="status-item s-4xx">
+        <div class="status-code">429</div>
+        <div class="status-name">Too Many Requests</div>
+        <div class="status-desc">Rate limited. Slow down your calls!</div>
+      </div>
+    </div>
+
+    <div style="margin-bottom: 12px; font-weight: 700; font-size: 15px; color: var(--delete);">5xx — Server Errors (their fault)</div>
+    <div class="status-grid" style="margin-bottom: 24px;">
+      <div class="status-item s-5xx">
+        <div class="status-code">500</div>
+        <div class="status-name">Internal Server Error</div>
+        <div class="status-desc">Something broke on their end.</div>
+      </div>
+      <div class="status-item s-5xx">
+        <div class="status-code">503</div>
+        <div class="status-name">Service Unavailable</div>
+        <div class="status-desc">Server is down or overloaded.</div>
+      </div>
+    </div>
+
+    <div class="card">
+      <h3>🐍 Handle Status Codes in Python</h3>
+      <div class="code-block">
+response = requests.get(<span class="string">"/users/42"</span>, headers=HEADERS)
+
+<span class="keyword">if</span> response.status_code == <span class="number">200</span>:
+    data = response.json()
+
+<span class="keyword">elif</span> response.status_code == <span class="number">401</span>:
+    <span class="keyword">raise</span> Exception(<span class="string">"Invalid API key!"</span>)
+
+<span class="keyword">elif</span> response.status_code == <span class="number">404</span>:
+    print(<span class="string">"User not found"</span>)
+
+<span class="keyword">elif</span> response.status_code == <span class="number">429</span>:
+    print(<span class="string">"Rate limited — slow down!"</span>)
+
+<span class="comment"># Or use raise_for_status() to auto-raise on 4xx/5xx</span>
+response.raise_for_status()
+      </div>
+    </div>
+
+    <div style="display:flex; gap:12px; flex-wrap:wrap;">
+      <button class="btn btn-ghost" onclick="prevSection()">← Back</button>
+      <button class="btn btn-primary" onclick="nextSection()">Next: REST in Data Engineering →</button>
+    </div>
+  </div>
+
+  <!-- SECTION 5: REST in Data Engineering -->
+  <div class="section" id="section-4">
+    <div class="section-title">REST APIs in Data Engineering</div>
+    <div class="section-subtitle">How you'll actually use this day-to-day.</div>
+
+    <div class="card">
+      <h3>🔄 Pattern 1: Extracting Data (ETL)</h3>
+      <p>The most common use — pulling data from external systems into your data warehouse.</p>
+      <div class="code-block">
+<span class="keyword">import</span> requests, pandas <span class="keyword">as</span> pd
+
+<span class="keyword">def</span> extract_orders(api_key, start_date):
+    all_orders = []
+    page = <span class="number">1</span>
+
+    <span class="keyword">while True</span>:
+        response = requests.get(
+            <span class="string">"https://api.shopify.com/orders"</span>,
+            headers={<span class="string">"X-Shopify-Access-Token"</span>: api_key},
+            params={<span class="string">"created_at_min"</span>: start_date,
+                    <span class="string">"limit"</span>: <span class="number">250</span>,
+                    <span class="string">"page"</span>: page}
+        )
+        data = response.json()[<span class="string">"orders"</span>]
+        <span class="keyword">if not</span> data:
+            <span class="keyword">break</span>   <span class="comment"># No more pages</span>
+        all_orders.extend(data)
+        page += <span class="number">1</span>
+
+    <span class="keyword">return</span> pd.DataFrame(all_orders)
+      </div>
+    </div>
+
+    <div class="card">
+      <h3>⏱️ Pattern 2: Pagination</h3>
+      <p>APIs limit how many records they return at once. You need to loop through pages.</p>
+      <div class="highlight-box"><strong>Offset pagination:</strong> <code>?page=1&limit=100</code> → <code>?page=2&limit=100</code></div>
+      <div class="highlight-box"><strong>Cursor pagination:</strong> Response includes a <code>next_cursor</code> token to pass in the next request.</div>
+      <div class="highlight-box"><strong>Link header pagination:</strong> Response headers include a <code>Link: &lt;url&gt;; rel="next"</code></div>
+    </div>
+
+    <div class="card">
+      <h3>🚦 Pattern 3: Rate Limiting</h3>
+      <p>APIs limit how many calls you can make. Ignore this and your pipeline will break.</p>
+      <div class="code-block">
+<span class="keyword">import</span> time
+
+<span class="keyword">def</span> safe_get(url, headers, params=<span class="keyword">None</span>):
+    <span class="keyword">for</span> attempt <span class="keyword">in</span> range(<span class="number">3</span>):   <span class="comment"># Retry 3 times</span>
+        r = requests.get(url, headers=headers, params=params)
+
+        <span class="keyword">if</span> r.status_code == <span class="number">429</span>:    <span class="comment"># Rate limited</span>
+            wait = int(r.headers.get(<span class="string">"Retry-After"</span>, <span class="number">60</span>))
+            print(<span class="string">f"Rate limited. Waiting {wait}s..."</span>)
+            time.sleep(wait)
+            <span class="keyword">continue</span>
+
+        r.raise_for_status()
+        <span class="keyword">return</span> r.json()
+
+    <span class="keyword">raise</span> Exception(<span class="string">"Max retries exceeded"</span>)
+      </div>
+    </div>
+
+    <div class="card">
+      <h3>🛠️ Pattern 4: Webhooks (APIs calling YOU)</h3>
+      <p>Instead of polling an API constantly, you can register a webhook URL. The service will call <em>your</em> endpoint when something happens (e.g., new order placed). Common in event-driven pipelines.</p>
+      <div class="highlight-box">Polling: <strong>You</strong> ask "any new data?" every 5 minutes → inefficient</div>
+      <div class="highlight-box">Webhook: <strong>They</strong> call your endpoint the moment new data arrives → efficient</div>
+    </div>
+
+    <div class="card">
+      <h3>🏭 Common APIs in Data Engineering</h3>
+      <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-top:12px;">
+        <div style="background:var(--bg); border-radius:10px; padding:14px; font-size:13px;">
+          <div style="font-weight:700; margin-bottom:6px;">☁️ Cloud</div>
+          <div style="color:var(--muted);">AWS, GCP, Azure APIs for storage, compute, and data services</div>
+        </div>
+        <div style="background:var(--bg); border-radius:10px; padding:14px; font-size:13px;">
+          <div style="font-weight:700; margin-bottom:6px;">📊 Analytics</div>
+          <div style="color:var(--muted);">Google Analytics, Mixpanel, Amplitude for event data</div>
+        </div>
+        <div style="background:var(--bg); border-radius:10px; padding:14px; font-size:13px;">
+          <div style="font-weight:700; margin-bottom:6px;">💰 Finance</div>
+          <div style="color:var(--muted);">Stripe, Braintree, QuickBooks for payment & accounting data</div>
+        </div>
+        <div style="background:var(--bg); border-radius:10px; padding:14px; font-size:13px;">
+          <div style="font-weight:700; margin-bottom:6px;">🤝 CRM/ERP</div>
+          <div style="color:var(--muted);">Salesforce, HubSpot, SAP for customer & business data</div>
+        </div>
+      </div>
+    </div>
+
+    <div style="display:flex; gap:12px; flex-wrap:wrap;">
+      <button class="btn btn-ghost" onclick="prevSection()">← Back</button>
+      <button class="btn btn-primary" onclick="nextSection()">Take the Quiz →</button>
+    </div>
+  </div>
+
+  <!-- SECTION 6: Quiz -->
+  <div class="section" id="section-5">
+    <div class="section-title">Knowledge Check</div>
+    <div class="section-subtitle">Test what you've learned — 6 questions.</div>
+
+    <div class="card" id="quiz-container">
+      <div id="quiz-inner"></div>
+    </div>
+
+    <div id="score-container" style="display:none;">
+      <div class="score-display">
+        <div class="score-number" id="final-score"></div>
+        <div style="font-size:18px; margin-top:12px; color:var(--muted);">out of 6 correct</div>
+        <div id="score-msg" style="margin-top:20px; font-size:16px;"></div>
+        <button class="btn btn-primary" onclick="restartQuiz()" style="margin-top:28px;">↺ Retake Quiz</button>
+      </div>
+    </div>
+
+    <button class="btn btn-ghost" onclick="prevSection()" style="margin-top:16px;">← Back</button>
+  </div>
+
+</div>
+
+<!-- Cheatsheet always at bottom -->
+<div style="max-width:900px; margin: 0 auto 60px; padding: 0 40px;" id="cheatsheet" style="display:none;">
+  <div class="card" style="border-color: rgba(0,229,255,0.2);">
+    <h3 style="margin-bottom:16px;">📋 Quick Reference Cheatsheet</h3>
+    <div class="cheatsheet-grid">
+      <div>
+        <div style="color:var(--muted); font-size:12px; font-family:monospace; margin-bottom:8px; text-transform:uppercase; letter-spacing:1px;">Methods</div>
+        <div style="display:flex; flex-direction:column; gap:6px;">
+          <div style="display:flex; align-items:center; gap:10px;"><span class="method m-get">GET</span><span style="font-size:13px; color:#94a3b8;">Read / Fetch</span></div>
+          <div style="display:flex; align-items:center; gap:10px;"><span class="method m-post">POST</span><span style="font-size:13px; color:#94a3b8;">Create</span></div>
+          <div style="display:flex; align-items:center; gap:10px;"><span class="method m-put">PUT</span><span style="font-size:13px; color:#94a3b8;">Replace (full)</span></div>
+          <div style="display:flex; align-items:center; gap:10px;"><span class="method m-patch">PATCH</span><span style="font-size:13px; color:#94a3b8;">Update (partial)</span></div>
+          <div style="display:flex; align-items:center; gap:10px;"><span class="method m-delete">DELETE</span><span style="font-size:13px; color:#94a3b8;">Remove</span></div>
+        </div>
+      </div>
+      <div>
+        <div style="color:var(--muted); font-size:12px; font-family:monospace; margin-bottom:8px; text-transform:uppercase; letter-spacing:1px;">Status Codes</div>
+        <div style="display:flex; flex-direction:column; gap:5px; font-size:13px;">
+          <div><span style="color:var(--get); font-family:monospace;">200</span> <span style="color:#94a3b8;">OK</span></div>
+          <div><span style="color:var(--get); font-family:monospace;">201</span> <span style="color:#94a3b8;">Created</span></div>
+          <div><span style="color:var(--get); font-family:monospace;">204</span> <span style="color:#94a3b8;">No Content</span></div>
+          <div><span style="color:var(--post); font-family:monospace;">400</span> <span style="color:#94a3b8;">Bad Request</span></div>
+          <div><span style="color:var(--post); font-family:monospace;">401</span> <span style="color:#94a3b8;">Unauthorized</span></div>
+          <div><span style="color:var(--post); font-family:monospace;">404</span> <span style="color:#94a3b8;">Not Found</span></div>
+          <div><span style="color:var(--post); font-family:monospace;">429</span> <span style="color:#94a3b8;">Rate Limited</span></div>
+          <div><span style="color:var(--delete); font-family:monospace;">500</span> <span style="color:#94a3b8;">Server Error</span></div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+  const QUESTIONS = [
+    {
+      q: "You want to fetch a list of orders from an API without changing any data. Which HTTP method do you use?",
+      options: ["POST", "GET", "PUT", "DELETE"],
+      answer: 1,
+      explanation: "GET is used to read/retrieve data. It never modifies anything on the server."
+    },
+    {
+      q: "Your API call returns status code 401. What does this mean?",
+      options: ["The resource was not found", "You're not authenticated (bad API key)", "The server crashed", "You sent too many requests"],
+      answer: 1,
+      explanation: "401 Unauthorized means authentication failed. Check your API key or token."
+    },
+    {
+      q: "You want to add a new user to a system. Which HTTP method should you use?",
+      options: ["GET", "DELETE", "POST", "PATCH"],
+      answer: 2,
+      explanation: "POST creates a new resource. It's like INSERT in SQL."
+    },
+    {
+      q: "An API returns status 429. What should your pipeline do?",
+      options: ["Retry immediately", "Stop the pipeline completely", "Wait and retry after a delay", "Switch to a different endpoint"],
+      answer: 2,
+      explanation: "429 means rate limited. You should wait (check Retry-After header) and then retry. Retrying immediately will just get you rate limited again."
+    },
+    {
+      q: "What is the difference between query parameters and a request body?",
+      options: [
+        "They are the same thing",
+        "Query params go in the URL (for filtering/GET), body carries data (for POST/PUT/PATCH)",
+        "Body is only for DELETE requests",
+        "Query params are only used for authentication"
+      ],
+      answer: 1,
+      explanation: "Query params are appended to the URL (e.g., ?status=active&limit=100) and are typically used for filtering with GET. Request body carries structured JSON data sent with POST, PUT, or PATCH."
+    },
+    {
+      q: "In data engineering, why is the REST API stateless nature useful for pipelines?",
+      options: [
+        "It makes APIs faster to build",
+        "It means each request is independent, so you can parallelize calls easily",
+        "It removes the need for authentication",
+        "It allows storing data inside the API"
+      ],
+      answer: 1,
+      explanation: "Stateless means every request carries all the info needed — no session state on the server. This makes it easy to run parallel requests across many pipeline workers without coordination."
+    }
+  ];
+
+  let currentQ = 0;
+  let score = 0;
+  let answered = [];
+  let currentSection = 0;
+  let visitedSections = new Set([0]);
+
+  function renderQuiz() {
+    const q = QUESTIONS[currentQ];
+    const letters = ['A', 'B', 'C', 'D'];
+    document.getElementById('quiz-inner').innerHTML = `
+      <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:20px;">
+        <div style="font-family:'Space Mono',monospace; font-size:12px; color:var(--muted);">Question ${currentQ+1} of ${QUESTIONS.length}</div>
+        <div style="font-family:'Space Mono',monospace; font-size:12px; color:var(--accent);">Score: ${score}/${QUESTIONS.length}</div>
+      </div>
+      <div class="quiz-question">${q.q}</div>
+      <div class="quiz-options">
+        ${q.options.map((opt, i) => `
+          <div class="quiz-option" id="opt-${i}" onclick="answer(${i})">
+            <span class="opt-letter">${letters[i]}</span>
+            ${opt}
+          </div>
+        `).join('')}
+      </div>
+      <div class="quiz-feedback" id="quiz-feedback"></div>
+      <div class="quiz-nav" id="quiz-nav" style="display:none;">
+        <button class="btn btn-primary" onclick="nextQuestion()">${currentQ < QUESTIONS.length - 1 ? 'Next Question →' : 'See Results'}</button>
+      </div>
+    `;
+  }
+
+  function answer(selected) {
+    if (answered[currentQ] !== undefined) return;
+    answered[currentQ] = selected;
+    const q = QUESTIONS[currentQ];
+    const isCorrect = selected === q.answer;
+    if (isCorrect) score++;
+
+    document.querySelectorAll('.quiz-option').forEach((el, i) => {
+      el.style.pointerEvents = 'none';
+      if (i === q.answer) el.classList.add('correct');
+      else if (i === selected && !isCorrect) el.classList.add('wrong');
+    });
+
+    const fb = document.getElementById('quiz-feedback');
+    fb.className = `quiz-feedback show ${isCorrect ? 'correct-fb' : 'wrong-fb'}`;
+    fb.innerHTML = (isCorrect ? '✅ Correct! ' : '❌ Not quite. ') + q.explanation;
+    document.getElementById('quiz-nav').style.display = 'flex';
+  }
+
+  function nextQuestion() {
+    currentQ++;
+    if (currentQ >= QUESTIONS.length) {
+      showScore();
+    } else {
+      renderQuiz();
+    }
+  }
+
+  function showScore() {
+    document.getElementById('quiz-container').style.display = 'none';
+    const sc = document.getElementById('score-container');
+    sc.style.display = 'block';
+    document.getElementById('final-score').textContent = score;
+    const msgs = ['Keep studying — review the sections above!', 'Good start! Review the sections you missed.', 'Solid understanding!', 'Great work!', 'Excellent!', 'Perfect score! You got this! 🎉', 'Perfect score! You got this! 🎉'];
+    document.getElementById('score-msg').textContent = msgs[score] || msgs[5];
+  }
+
+  function restartQuiz() {
+    currentQ = 0; score = 0; answered = [];
+    document.getElementById('quiz-container').style.display = 'block';
+    document.getElementById('score-container').style.display = 'none';
+    renderQuiz();
+  }
+
+  function showSection(index) {
+    document.querySelectorAll('.section').forEach(s => s.classList.remove('active'));
+    document.getElementById('section-' + index).classList.add('active');
+
+    document.querySelectorAll('.tab').forEach((t, i) => {
+      t.classList.remove('active');
+      if (i < index && visitedSections.has(i)) t.classList.add('done');
+      else t.classList.remove('done');
+    });
+    document.querySelectorAll('.tab')[index].classList.add('active');
+
+    currentSection = index;
+    visitedSections.add(index);
+
+    const fill = Math.round((visitedSections.size / 6) * 100);
+    document.getElementById('progress-fill').style.width = fill + '%';
+    document.getElementById('progress-text').textContent = visitedSections.size + ' / 6 sections';
+
+    if (index === 5 && answered.length === 0) renderQuiz();
+
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  }
+
+  function nextSection() { showSection(Math.min(currentSection + 1, 5)); }
+  function prevSection() { showSection(Math.max(currentSection - 1, 0)); }
+</script>
+
+</body>
+</html>
